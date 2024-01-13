@@ -1,0 +1,24 @@
+# マスターノードとの通信用ポートを開放する 
+# これループにできないんすかね。。？ TODO
+- name: マスターノードからのポート6443への接続を許可
+  ufw:
+    from_ip: "{{ item }}"
+    rule: allow
+    port: 6443
+    state: enabled
+  loop: "{{ groups['master'] }}"
+- name: マスターノードからのポート10250への接続を許可
+  ufw:
+    from_ip: "{{ item }}"
+    rule: allow
+    port: 10250 
+    state: enabled
+  loop: "{{ groups['master'] }}"
+- name: マスターノードからのポート30000-32767への接続を許可
+  ufw:
+    from_ip: "{{ item }}"
+    rule: allow
+    port: 30000:32767
+    proto: tcp
+    state: enabled
+  loop: "{{ groups['master'] }}"

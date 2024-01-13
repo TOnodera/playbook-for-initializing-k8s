@@ -1,0 +1,38 @@
+# ワーカノードとの通信用ポートを開放する 
+# これループにできないんすかね。。？ TODO
+- name: ノードIPからのポート6443への接続を許可
+  ufw:
+    from_ip: "{{ item }}"
+    rule: allow
+    port: 6443 
+    state: enabled
+  loop: "{{ groups['nodes'] }}"
+- name: ノードIPからのポート2379-2380への接続を許可
+  ufw:
+    from_ip: "{{ item }}"
+    rule: allow
+    port: 2379:2380
+    proto: tcp
+    state: enabled
+  loop: "{{ groups['nodes'] }}"
+- name: ノードIPからのポート10250への接続を許可
+  ufw:
+    from_ip: "{{ item }}"
+    rule: allow
+    port: 10250
+    state: enabled
+  loop: "{{ groups['nodes'] }}"
+- name: ノードIPからのポート10259への接続を許可
+  ufw:
+    from_ip: "{{ item }}"
+    rule: allow
+    port: 10259
+    state: enabled
+  loop: "{{ groups['nodes'] }}"
+- name: ノードIPからのポート10257への接続を許可
+  ufw:
+    from_ip: "{{ item }}"
+    rule: allow
+    port: 10257
+    state: enabled
+  loop: "{{ groups['nodes'] }}"

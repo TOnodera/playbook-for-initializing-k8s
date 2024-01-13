@@ -1,0 +1,19 @@
+# kubeadm initを実行するホスト(一つだけ)
+[master]
+XXXX.XXXX.XXXX.XXXX
+
+# ノードプレーンとして追加するホスト(複数可)
+[nodes]
+XXXX.XXXX.XXXX.XXXX
+XXXX.XXXX.XXXX.XXXX
+XXXX.XXXX.XXXX.XXXX # ansible_user=hoge ansible_ssh_private_key_file="/path/to/identify_file"
+                    # 👆個別でsshの認証情報を設定する場合
+            
+# masterにssh接続するためのユーザー情報と鍵のパス
+[master:vars]
+ansible_user=user_name
+ansible_ssh_private_key_file="/path/to/identify_file"
+# nodesにssh接続するためのユーザー情報と鍵のパス
+[nodes:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file="/path/to/identify_file"

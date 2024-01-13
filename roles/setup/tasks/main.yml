@@ -1,0 +1,101 @@
+---
+# インストールの準備
+- name: インストール済みかチェック
+  command: kubectl
+  ignore_errors: true
+  register: is_installed_kubectl
+- block:
+  - name: swapをoffにする
+    shell: |
+      swapoff -a
+      sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+  - name: containerd.confの存在チェック
+    stat:
+      path: /etc/modules-load.d/containerd.conf
+    register: is_exists_containerd_conf
+  - name: containerd.conf作成
+    lineinfile:
+      path: /etc/modules-load.d/containerd.conf
+      create: true
+      line: |
+        overlay
+        br_netfilter
+    when: is_exists_containerd_conf.stat.exists == false
+  - name: kubernetes.confの存在チェック
+    stat:
+      path: /etc/sysctl.d/kubernetes.conf
+    register: is_exists_kubernetes_conf
+  - name: kubernetes.conf作成
+    lineinfile:
+      path: /etc/sysctl.d/kubernetes.conf
+      create: true
+      line: |
+        net.bridge.bridge-nf-call-ip6tables = 1
+        net.bridge.bridge-nf-call-iptables = 1
+        net.ipv4.ip_forward = 1
+    when: is_exists_kubernetes_conf.stat.exists == false
+  - name: カーネルパラメータの更新
+    shell: sysctl --system
+  - name: カーネルモジュールoverlay読み込み
+    community.general.modprobe:
+      name: overlay
+  - name: カーネルモジュールbr_netfilter読み込み
+    community.general.modprobe:
+      name: br_netfilter
+  # コンテナランタイムをインストール
+  - name: 必要なライブラリをインストール
+    apt:
+      update_cache: true
+      pkg:
+        - curl
+        - gnupg2
+        - software-properties-common
+        - apt-transport-https
+        - ca-certificates
+  - name: リポジトリキー登録
+    apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+  - name: リポジトリ登録
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+  - name: dockerランタイムインストール
+    apt:
+      update_cache: true
+      name: containerd.io
+  - name: containerdの設定ファイルを作成
+    shell: containerd config default > /etc/containerd/config.toml
+  - name: containerdの設定を変更
+    lineinfile:
+      dest: /etc/containerd/config.toml
+      regex: "SystemdCgroup = false"
+      line: "SystemdCgroup = true"
+  - name: containerd再起動
+    systemd_service:
+      name: containerd
+      state: restarted
+      enabled: true
+  - name: kubernetes用のリポジトリキーを追加
+    apt_key:
+        url: https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key
+  - name: kubernetes用のリポジトリを追加
+    apt_repository:
+      repo: deb https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /
+  - name: kubelet, kubeadm, kubectlをインストール
+    apt:
+      pkg:
+        - kubeadm
+        - kubectl
+        - kubelet
+  - name: kubeadmを更新させないようにする
+    ansible.builtin.dpkg_selections:
+      name: kubeadm
+      selection: hold
+  - name: kubectlを更新させないようにする
+    ansible.builtin.dpkg_selections:
+      name: kubectl
+      selection: hold
+  - name: kubeletを更新させないようにする
+    ansible.builtin.dpkg_selections:
+      name: kubelet
+      selection: hold
+  when: is_installed_kubectl['rc'] != 0 

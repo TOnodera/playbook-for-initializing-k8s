@@ -1,0 +1,44 @@
+---
+- name: pipをインストール
+  become: true
+  apt:
+    name: python3-pip
+- name: save_secretsでpyyamlを使うのでインストール
+  pip:
+    name: pyyaml
+- name: save_secretsをアップロード
+  copy:
+    src: ../files/save_secrets
+    dest: ~/save_secrets
+    mode: "0755"
+- name: kubeadm initを実行する
+  become: true
+  shell:
+    cmd: kubeadm init --control-plane-endpoint "{{ groups['master'][0] }}"
+  register: kubeadm_init_result
+- name: save_secretsを実行してトークンとハッシュを保存する
+  shell:
+    cmd: echo "{{ kubeadm_init_result.stdout }}" | ~/save_secrets
+  register: debug_result
+  ignore_errors: true
+- name: トークンとハッシュをダウンロードする
+  fetch:
+    src: /tmp/secrets.yaml
+    dest: ./secrets.yaml
+    flat: true
+- name: ansible_userのuidを取得
+  shell: id -u
+  register: id_u_result
+- name: ansible_userのgidを取得
+  shell: id -g
+  register: id_g_result
+- name: 設定ファイルをユーザーのホームディレクトリに移動する
+  become: true
+  shell:
+    cmd: |-
+      HOME=/home/{{ ansible_user }}
+      USER={{ ansible_user }}
+      mkdir -p $HOME/.kube
+      cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+      chown -R $USER:$USER $HOME/.kube
+    

@@ -1,0 +1,7 @@
+- name: DEBUG これから以下のスクリプトを実行します。
+  debug:
+    msg: kubeadm join "{{ groups['master'][0] }}":6443 --token "{{ secrets.token }}" --discovery-token-ca-cert-hash "{{ secrets.cert_hash }}"
+- name: ノードプレーンコンポーネントとしてクラスタに追加する
+  become: true
+  shell: kubeadm join "{{ groups['master'][0] }}":6443 --token "{{ secrets.token }}" --discovery-token-ca-cert-hash "{{ secrets.cert_hash }}"
+

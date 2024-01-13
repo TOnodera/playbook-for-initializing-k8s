@@ -1,0 +1,37 @@
+---
+- name: マスター・ノード共通設定
+  hosts:
+    - master
+    - nodes
+  become: true
+  roles:
+    - { role: setup, tags: setup }
+- name: マスターノードでワーカーとの通信用IPアドレスを開放する
+  hosts:
+    - master
+  become: true
+  roles:
+    - { role: init-master, tags: init-master }
+- name: ワーカーノードでマスターとの通信用IPアドレスを開放する
+  hosts:
+    - nodes 
+  become: true
+  roles:
+    - { role: init-node, tags: init-node }
+- name: kubeadm initを実行してトークンとハッシュを発行
+  hosts:
+    - master
+  roles:
+    - { role: run-kubeadm-init, tags: run-kubeadm-init }
+- name: ノードプレーンコンポーネントをクラスタに追加する
+  vars_files:
+    - secrets.yaml # kubeadm init実行ロールで出力される
+  hosts:
+    - nodes
+  roles:
+    - { role: join-node-component, tags: join-node-component }
+- name: cniアドオンを有効にする
+  hosts:
+    - master
+  roles:
+    - { role: add-cni-addon, tags: add-cni-addon }
