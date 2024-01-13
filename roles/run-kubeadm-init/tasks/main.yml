@@ -20,7 +20,6 @@
   shell:
     cmd: echo "{{ kubeadm_init_result.stdout }}" | ~/save_secrets
   register: debug_result
-  ignore_errors: true
 - name: トークンとハッシュをダウンロードする
   fetch:
     src: /tmp/secrets.yaml
@@ -41,4 +40,3 @@
       mkdir -p $HOME/.kube
       cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       chown -R $USER:$USER $HOME/.kube
-    
